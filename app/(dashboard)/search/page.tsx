@@ -1,6 +1,6 @@
 'use client'
-import { useState, useMemo } from 'react'
-import { VIDEOS, RECENT_SEARCHES, type Platform } from '@/lib/mock-data'
+import { useState } from 'react'
+import { VIDEOS, RECENT_SEARCHES, type Platform, type Video } from '@/lib/mock-data'
 import PageHeader from '@/components/PageHeader'
 import VideoCard from '@/components/VideoCard'
 
@@ -13,24 +13,41 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [sort, setSort] = useState<'viral' | 'views' | 'recent'>('viral')
+  const [results, setResults] = useState<Video[]>([])
+  const [searching, setSearching] = useState(false)
 
-  const results = useMemo(() => {
-    if (!submitted) return []
-    return VIDEOS
-      .filter(v => platforms.includes(v.platform))
-      .filter(v =>
-        v.title.toLowerCase().includes(submitted.toLowerCase()) ||
-        v.creator.toLowerCase().includes(submitted.toLowerCase()) ||
-        v.niche.toLowerCase().includes(submitted.toLowerCase())
-      )
-      .sort((a, b) => {
+  const handleSearch = async () => {
+    const q = query.trim()
+    if (!q) return
+    setSubmitted(q)
+    setSearching(true)
+    try {
+      const platformParam = platforms.length === 3 ? 'all' : platforms[0]
+      const res = await fetch(`/api/scrape/search?q=${encodeURIComponent(q)}&platform=${platformParam}`)
+      const data = await res.json()
+      const fetched: Video[] = data.videos ?? []
+      // Apply sort
+      const sorted = [...fetched].sort((a, b) => {
         if (sort === 'viral')  return b.score - a.score
         if (sort === 'views')  return b.views - a.views
         return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
       })
-  }, [submitted, platforms, sort])
-
-  const handleSearch = () => setSubmitted(query.trim())
+      setResults(sorted)
+    } catch {
+      // fallback to mock search
+      const filtered = VIDEOS.filter(v =>
+        platforms.includes(v.platform) &&
+        (v.title.toLowerCase().includes(q.toLowerCase()) || v.creator.toLowerCase().includes(q.toLowerCase()))
+      ).sort((a, b) => {
+        if (sort === 'viral')  return b.score - a.score
+        if (sort === 'views')  return b.views - a.views
+        return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime()
+      })
+      setResults(filtered)
+    } finally {
+      setSearching(false)
+    }
+  }
 
   return (
     <>
@@ -73,13 +90,16 @@ export default function SearchPage() {
           />
           <button
             onClick={handleSearch}
+            disabled={searching}
             style={{
               padding: '12px 24px',
-              background: 'var(--accent)', color: '#000',
+              background: searching ? 'var(--raised)' : 'var(--accent)',
+              color: searching ? 'var(--muted)' : '#000',
               fontWeight: 700, fontSize: 13, border: 'none',
-              cursor: 'pointer',
+              cursor: searching ? 'default' : 'pointer',
+              transition: 'background 150ms',
             }}
-          >Search</button>
+          >{searching ? 'Searching…' : 'Search'}</button>
         </div>
 
         {/* On: platform pills + Sort */}
@@ -133,7 +153,7 @@ export default function SearchPage() {
               {RECENT_SEARCHES.map((s, i) => (
                 <button
                   key={i}
-                  onClick={() => { setQuery(s.query); setSubmitted(s.query) }}
+                  onClick={() => { setQuery(s.query); setSubmitted(s.query); handleSearch() }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '6px 14px', borderRadius: 20,
@@ -161,9 +181,19 @@ export default function SearchPage() {
         {submitted && (
           <div>
             <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--label)' }}>
-              {results.length} result{results.length !== 1 ? 's' : ''} for <strong style={{ color: 'var(--ink)' }}>"{submitted}"</strong>
+              {searching ? (
+                <span style={{ color: 'var(--muted)' }}>Searching across platforms…</span>
+              ) : (
+                <>{results.length} result{results.length !== 1 ? 's' : ''} for <strong style={{ color: 'var(--ink)' }}>"{submitted}"</strong></>
+              )}
             </div>
-            {results.length > 0 ? (
+            {searching ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+                {[1,2,3,4,5,6].map(i => (
+                  <div key={i} style={{ height: 220, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', opacity: 0.4 }} />
+                ))}
+              </div>
+            ) : results.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
                 {results.map((v, i) => <VideoCard key={v.id} video={v} index={i} />)}
               </div>
