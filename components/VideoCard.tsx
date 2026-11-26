@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Video } from '@/lib/mock-data'
 import { formatNumber } from '@/lib/utils'
+import SaveButton from '@/components/SaveButton'
 
 const PLATFORM_DOT: Record<string, string> = {
   tiktok:    '#69C9D0',
@@ -59,16 +60,18 @@ export default function VideoCard({ video, index = 0, showAnalysis = false }: Pr
           }}>
             {video.platform.toUpperCase()}
           </span>
-          {/* Score badge */}
-          <span style={{
-            position: 'absolute', top: 10, right: 10,
-            background: 'var(--accent)', color: '#000',
-            fontSize: 11, fontWeight: 800,
-            padding: '2px 7px', borderRadius: 6,
-            fontFamily: 'JetBrains Mono, monospace',
-          }}>
-            {video.score}
-          </span>
+          {/* Score badge + save icon */}
+          <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <SaveButton videoId={video.id} variant="icon" />
+            <span style={{
+              background: 'var(--accent)', color: '#000',
+              fontSize: 11, fontWeight: 800,
+              padding: '2px 7px', borderRadius: 6,
+              fontFamily: 'JetBrains Mono, monospace',
+            }}>
+              {video.score}
+            </span>
+          </div>
         </div>
 
         {/* Body */}

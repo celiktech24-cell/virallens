@@ -1,6 +1,7 @@
 import { VIDEOS } from '@/lib/mock-data'
 import { formatNumber, scoreLabel } from '@/lib/utils'
 import BackButton from '@/components/BackButton'
+import SaveButton from '@/components/SaveButton'
 
 export const instant = false
 
@@ -197,8 +198,8 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
         {/* Action bar */}
         <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <button style={{ padding: '10px 24px', borderRadius: 20, border: '1px solid var(--border-hi)', background: 'transparent', color: 'var(--label)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Save Video</button>
-          <button style={{ padding: '10px 24px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}>Open Original →</button>
+          <SaveButton videoId={video.id} />
+          <button style={{ padding: '8px 20px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>Open Original →</button>
         </div>
       </div>
     </>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { Video } from '@/lib/mock-data'
 import { formatNumber } from '@/lib/utils'
+import SaveButton from '@/components/SaveButton'
 
 export default function FeaturedCard({ video }: { video: Video }) {
   return (
@@ -97,11 +98,7 @@ export default function FeaturedCard({ video }: { video: Video }) {
               background: 'var(--accent)', color: '#000',
               fontWeight: 700, fontSize: 12, textAlign: 'center',
             }}>Analyze →</div>
-            <div style={{
-              padding: '8px 16px', borderRadius: 20,
-              border: '1px solid var(--border-hi)',
-              color: 'var(--label)', fontSize: 12, textAlign: 'center',
-            }}>Save</div>
+            <SaveButton videoId={video.id} />
           </div>
         </div>
       </div>

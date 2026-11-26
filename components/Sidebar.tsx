@@ -1,18 +1,20 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { getSavedIds, onSavedChange } from '@/lib/saved-store'
 
-const NAV = [
-  { href: '/',        label: 'Trending',    count: 247, icon: (
+const NAV_BASE = [
+  { href: '/',        label: 'Trending',    staticCount: 247 as number | null, icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l3.5-4 3 2.5L12 5l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
   )},
-  { href: '/search',  label: 'Search',      count: null, icon: (
+  { href: '/search',  label: 'Search',      staticCount: null, icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11l2.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
   )},
-  { href: '/saved',   label: 'Saved',       count: 24, icon: (
+  { href: '/saved',   label: 'Saved',       staticCount: null, icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h8a1 1 0 0 1 1 1v10l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
   )},
-  { href: '/collections', label: 'Collections', count: 3, icon: (
+  { href: '/collections', label: 'Collections', staticCount: 3 as number | null, icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="2" width="5" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="2" y="9" width="5" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="5" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/></svg>
   )},
 ]
@@ -28,6 +30,18 @@ const TOOLS = [
 
 export default function Sidebar() {
   const path = usePathname()
+  const [savedCount, setSavedCount] = useState(0)
+
+  useEffect(() => {
+    setSavedCount(getSavedIds().length)
+    return onSavedChange(() => setSavedCount(getSavedIds().length))
+  }, [])
+
+  const NAV = NAV_BASE.map(item =>
+    item.href === '/saved'
+      ? { ...item, count: savedCount || null }
+      : { ...item, count: item.staticCount }
+  )
 
   return (
     <aside style={{
