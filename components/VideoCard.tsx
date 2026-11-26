@@ -1,3 +1,4 @@
+'use client'
 import Link from 'next/link'
 import type { Video } from '@/lib/mock-data'
 import { formatNumber } from '@/lib/utils'
@@ -19,7 +20,11 @@ export default function VideoCard({ video, index = 0, showAnalysis = false }: Pr
   const delay = 30 + index * 50
 
   return (
-    <Link href={`/analysis/${video.id}`} style={{ textDecoration: 'none' }}>
+    <Link
+      href={`/analysis/${video.id}`}
+      style={{ textDecoration: 'none' }}
+      onClick={() => { try { sessionStorage.setItem(`video:${video.id}`, JSON.stringify(video)) } catch {} }}
+    >
       <div
         className="animate-card-in"
         style={{

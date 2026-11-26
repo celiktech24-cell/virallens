@@ -47,12 +47,16 @@ export async function POST() {
     results.push({ platform: 'youtube', count: 0, error: e.message })
   }
 
+  // Filter out low-view content — only store genuinely viral videos
+  const MIN_VIEWS = 10_000
+  const viralVideos = allVideos.filter(v => v.views >= MIN_VIEWS)
+
   // Upsert to DB
-  if (allVideos.length > 0) {
-    await upsertVideos(supabase, allVideos)
+  if (viralVideos.length > 0) {
+    await upsertVideos(supabase, viralVideos)
   }
 
-  return NextResponse.json({ ok: true, total: allVideos.length, results })
+  return NextResponse.json({ ok: true, total: viralVideos.length, results })
 }
 
 // Allow GET for cron

@@ -41,6 +41,12 @@ export function normalizeTikTokVideo(raw: any): Video | null {
 }
 
 export function normalizeTikTokFeed(raw: any): Video[] {
+  // Search response wraps each item under aweme_info
+  if (raw?.search_item_list) {
+    return raw.search_item_list
+      .map((item: any) => normalizeTikTokVideo(item.aweme_info ?? item))
+      .filter(Boolean) as Video[]
+  }
   const list = raw?.aweme_list ?? raw?.data ?? raw?.videos ?? []
   return list.map(normalizeTikTokVideo).filter(Boolean) as Video[]
 }
@@ -48,10 +54,13 @@ export function normalizeTikTokFeed(raw: any): Video[] {
 // ── Instagram ─────────────────────────────────────────────────────────────────
 export function normalizeInstagramReel(raw: any): Video | null {
   try {
-    const id = raw.pk ?? raw.id ?? raw.media_id
+    const id = raw.pk ?? raw.id ?? raw.media_id ?? raw.shortcode
     if (!id) return null
 
-    const caption = raw.caption?.text ?? raw.title ?? raw.desc ?? ''
+    // caption can be a plain string (search) or {text} object (trending)
+    const caption = typeof raw.caption === 'string'
+      ? raw.caption
+      : (raw.caption?.text ?? raw.title ?? raw.desc ?? '')
     const user = raw.user ?? raw.owner ?? {}
     const views    = Number(raw.play_count ?? raw.view_count ?? raw.video_view_count ?? 0)
     const likes    = Number(raw.like_count ?? raw.likes ?? 0)
@@ -76,7 +85,8 @@ export function normalizeInstagramReel(raw: any): Video | null {
       postedAt: createdAt.toISOString(),
       ago: timeAgo(createdAt),
       videoUrl: raw.video_versions?.[0]?.url ?? raw.video_url,
-      thumbnailUrl: raw.image_versions2?.candidates?.[0]?.url ?? raw.thumbnail_url,
+      thumbnailUrl: raw.image_versions2?.candidates?.[0]?.url
+        ?? raw.thumbnail_src ?? raw.display_url ?? raw.thumbnail_url,
     }
   } catch { return null }
 }
@@ -94,12 +104,16 @@ export function normalizeYouTubeVideo(raw: any): Video | null {
 
     const title = raw.title ?? raw.name ?? ''
     const channel = raw.channel ?? raw.author ?? {}
-    const views    = Number(raw.viewCount ?? raw.views ?? raw.view_count ?? 0)
+    // Search results use viewCountInt; detail pages use viewCount
+    const views    = Number(raw.viewCountInt ?? raw.viewCount ?? raw.views ?? raw.view_count ?? 0)
     const likes    = Number(raw.likeCount ?? raw.likes ?? raw.like_count ?? 0)
     const shares   = 0
     const comments = Number(raw.commentCount ?? raw.comments ?? raw.comment_count ?? 0)
     const createdAt = raw.publishedAt ? new Date(raw.publishedAt) :
-                      raw.published_at ? new Date(raw.published_at) : new Date()
+                      raw.published_at ? new Date(raw.published_at) :
+                      // publishedTime can be a unix timestamp (seconds)
+                      (raw.publishedTime && typeof raw.publishedTime === 'number')
+                        ? new Date(raw.publishedTime * 1000) : new Date()
 
     const hooks = detectHooks(title)
     const niche = detectNiche(title)
@@ -117,12 +131,23 @@ export function normalizeYouTubeVideo(raw: any): Video | null {
       thumbnailGradient: platformGradient('youtube'),
       postedAt: createdAt.toISOString(),
       ago: timeAgo(createdAt),
-      thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      // Use API-provided thumbnail URL if available, fall back to constructed URL
+      thumbnailUrl: raw.thumbnail ?? `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
     }
   } catch { return null }
 }
 
 export function normalizeYouTubeFeed(raw: any): Video[] {
-  const list = raw?.videos ?? raw?.shorts ?? raw?.items ?? raw?.data ?? []
-  return list.map(normalizeYouTubeVideo).filter(Boolean) as Video[]
+  // Merge both videos and shorts arrays from search response
+  const list = [
+    ...(raw?.videos ?? []),
+    ...(raw?.shorts ?? []),
+    ...(raw?.items ?? []),
+    ...(raw?.data ?? []),
+  ]
+  // Deduplicate by id
+  const seen = new Set<string>()
+  return list
+    .map(normalizeYouTubeVideo)
+    .filter((v): v is Video => v !== null && !seen.has(v.id) && seen.add(v.id) !== undefined)
 }

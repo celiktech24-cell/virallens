@@ -7,3 +7,7 @@ export async function getTikTokTrending() {
 export async function searchTikTok(query: string) {
   return scrapeGet<any>('/v1/tiktok/search/keyword', { query })
 }
+
+export async function getTikTokVideoById(awemeId: string) {
+  return scrapeGet<any>('/v1/tiktok/video', { aweme_id: awemeId })
+}

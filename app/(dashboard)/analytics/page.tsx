@@ -17,7 +17,7 @@ export default function AnalyticsPage() {
       const res = await fetch('/api/videos')
       if (!res.ok) return
       const data = await res.json()
-      if (Array.isArray(data) && data.length > 0) setVideos(data)
+      if (data.videos?.length > 0) setVideos(data.videos)
     } catch {
       // keep mock fallback
     }
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
         {/* Stat strip */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--border)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
           {[
-            { label: 'VIDEOS TRACKED',  value: stats.count.toString(),         sub: '15 total in dataset',    color: 'var(--muted)' },
+            { label: 'VIDEOS TRACKED',  value: stats.count.toString(),         sub: `${videos.length} total in dataset`,    color: 'var(--muted)' },
             { label: 'AVG VIRAL SCORE', value: stats.avg.toString(),            sub: '↑ +3 this week',         color: 'var(--up)' },
             { label: 'TOP PLATFORM',    value: stats.topPlatformLabel,          sub: 'most viral content',     color: 'var(--muted)' },
             { label: 'TOP HOOK',        value: stats.topHook,                   sub: 'dominant pattern',       color: 'var(--muted)' },
