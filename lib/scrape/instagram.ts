@@ -9,5 +9,6 @@ export async function searchInstagram(query: string) {
 }
 
 export async function getInstagramVideoById(mediaId: string) {
-  return scrapeGet<any>('/v1/instagram/post/info', { id: mediaId })
+  const url = `https://www.instagram.com/reel/${mediaId}/`
+  return scrapeGet<any>('/v1/instagram/post', { url })
 }

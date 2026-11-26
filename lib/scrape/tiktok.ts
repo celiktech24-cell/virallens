@@ -9,5 +9,7 @@ export async function searchTikTok(query: string) {
 }
 
 export async function getTikTokVideoById(awemeId: string) {
-  return scrapeGet<any>('/v1/tiktok/video', { aweme_id: awemeId })
+  // /v2/tiktok/video requires the full URL, not just the ID
+  const url = `https://www.tiktok.com/video/${awemeId}`
+  return scrapeGet<any>('/v2/tiktok/video', { url })
 }
