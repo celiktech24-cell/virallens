@@ -24,6 +24,8 @@ export type Video = {
   thumbnailGradient: string
   hookTypes: HookType[]
   analysisText: string
+  videoUrl?: string
+  thumbnailUrl?: string
   saved?: boolean
 }
 

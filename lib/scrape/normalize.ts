@@ -34,6 +34,8 @@ export function normalizeTikTokVideo(raw: any): Video | null {
       thumbnailGradient: platformGradient('tiktok'),
       postedAt: createdAt.toISOString(),
       ago: timeAgo(createdAt),
+      videoUrl: v.video?.play_addr?.url_list?.[0] ?? v.video?.download_addr?.url_list?.[0],
+      thumbnailUrl: v.video?.cover?.url_list?.[0] ?? v.video?.dynamic_cover?.url_list?.[0],
     }
   } catch { return null }
 }
@@ -73,6 +75,8 @@ export function normalizeInstagramReel(raw: any): Video | null {
       thumbnailGradient: platformGradient('instagram'),
       postedAt: createdAt.toISOString(),
       ago: timeAgo(createdAt),
+      videoUrl: raw.video_versions?.[0]?.url ?? raw.video_url,
+      thumbnailUrl: raw.image_versions2?.candidates?.[0]?.url ?? raw.thumbnail_url,
     }
   } catch { return null }
 }
@@ -113,6 +117,7 @@ export function normalizeYouTubeVideo(raw: any): Video | null {
       thumbnailGradient: platformGradient('youtube'),
       postedAt: createdAt.toISOString(),
       ago: timeAgo(createdAt),
+      thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
     }
   } catch { return null }
 }

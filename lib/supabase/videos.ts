@@ -18,6 +18,8 @@ export type VideoRow = {
   analysis_text: string
   posted_at: string
   fetched_at: string
+  video_url?: string | null
+  thumbnail_url?: string | null
 }
 
 function rowToVideo(row: VideoRow): Video {
@@ -50,6 +52,8 @@ function rowToVideo(row: VideoRow): Video {
     thumbnailGradient: gradients[row.platform],
     postedAt: row.posted_at,
     ago,
+    videoUrl: row.video_url ?? undefined,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
   }
 }
 
@@ -59,7 +63,7 @@ export async function getVideos(
 ): Promise<Video[]> {
   let q = supabase
     .from('videos')
-    .select('id,platform,original_id,title,creator,creator_handle,views,likes,shares,comments,score,niche,hook_types,analysis_text,posted_at,fetched_at')
+    .select('id,platform,original_id,title,creator,creator_handle,views,likes,shares,comments,score,niche,hook_types,analysis_text,posted_at,fetched_at,video_url,thumbnail_url')
     .order('score', { ascending: false })
     .limit(opts.limit ?? 30)
 
@@ -90,6 +94,8 @@ export async function upsertVideos(supabase: SupabaseClient, videos: Video[]): P
     analysis_text:  v.analysisText,
     posted_at:      v.postedAt,
     fetched_at:     new Date().toISOString(),
+    video_url:      v.videoUrl ?? null,
+    thumbnail_url:  v.thumbnailUrl ?? null,
   }))
   await supabase.from('videos').upsert(rows, { onConflict: 'id' })
 }

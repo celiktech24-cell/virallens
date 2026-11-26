@@ -1,14 +1,14 @@
+export const instant = false
+
 import { VIDEOS } from '@/lib/mock-data'
 import { formatNumber, scoreLabel } from '@/lib/utils'
 import BackButton from '@/components/BackButton'
 import SaveButton from '@/components/SaveButton'
 import AddToCollection from '@/components/AddToCollection'
+import VideoPlayer from '@/components/VideoPlayer'
+import { createClient } from '@/lib/supabase/server'
+import { getVideoById } from '@/lib/supabase/videos'
 
-export const instant = false
-
-export function generateStaticParams() {
-  return VIDEOS.map(v => ({ id: v.id }))
-}
 
 const PLATFORM_DOT: Record<string, string> = {
   tiktok: '#69C9D0', instagram: '#E1306C', youtube: '#FF4444',
@@ -26,7 +26,8 @@ const HOOK_ICONS: Record<string, string> = {
 
 export default async function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const video = VIDEOS.find(v => v.id === id)
+  const supabase = await createClient()
+  const video = (await getVideoById(supabase, id)) ?? VIDEOS.find(v => v.id === id)
 
   if (!video) {
     return (
@@ -36,6 +37,11 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
     )
   }
 
+  const originalId = video.id.includes(':') ? video.id.split(':')[1] : video.id
+  const videoUrl =
+    video.platform === 'tiktok'    ? `https://www.tiktok.com/@${video.creatorHandle}/video/${originalId}`
+    : video.platform === 'instagram' ? `https://www.instagram.com/reels/${originalId}/`
+    :                                   `https://www.youtube.com/shorts/${originalId}`
   const circumference = 251.3
   const dashOffset = circumference - (video.score / 100) * (circumference - 15.1)
 
@@ -145,6 +151,40 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           ))}
         </div>
 
+        {/* Video Preview */}
+        <div style={{ marginBottom: 20, display: 'grid', gridTemplateColumns: video.platform === 'youtube' ? '1fr' : '280px 1fr', gap: 14, alignItems: 'start' }} className="animate-card-in">
+          <VideoPlayer
+            platform={video.platform}
+            originalId={originalId}
+            videoUrl={video.videoUrl}
+            thumbnailUrl={video.thumbnailUrl}
+            title={video.title}
+            creatorHandle={video.creatorHandle}
+            ago={video.ago}
+            externalUrl={videoUrl}
+          />
+          {video.platform !== 'youtube' && (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>WHY IT WENT VIRAL</div>
+                <p style={{ fontSize: 13, color: 'var(--label)', lineHeight: 1.65 }}>{video.analysisText}</p>
+              </div>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 10 }}>HOOK SUMMARY</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {video.hookTypes.slice(0, 4).map(h => (
+                    <span key={h.label} style={{
+                      fontSize: 11, padding: '4px 10px', borderRadius: 20,
+                      background: 'var(--accent-bg)', border: '1px solid rgba(206,255,94,0.15)',
+                      color: 'var(--accent)', fontWeight: 600,
+                    }}>{h.label}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Hook breakdown + engagement bars */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           {/* Hook Types */}
@@ -201,7 +241,9 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
         <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
           <AddToCollection videoId={video.id} />
           <SaveButton videoId={video.id} />
-          <button style={{ padding: '8px 20px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>Open Original →</button>
+          <a href={videoUrl} target="_blank" rel="noopener noreferrer" style={{ padding: '8px 20px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            Open Original →
+          </a>
         </div>
       </div>
     </>
