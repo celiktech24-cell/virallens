@@ -9,6 +9,6 @@ export async function searchYouTube(query: string) {
 }
 
 export async function getYouTubeVideoById(videoId: string) {
-  const url = `https://www.youtube.com/shorts/${videoId}`
+  const url = `https://www.youtube.com/watch?v=${videoId}`
   return scrapeGet<any>('/v1/youtube/video', { url })
 }
