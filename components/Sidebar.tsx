@@ -1,8 +1,10 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { getSavedIds, onSavedChange } from '@/lib/saved-store'
+import { useAuth } from '@/components/AuthProvider'
+import { createClient } from '@/lib/supabase/client'
 
 const NAV_BASE = [
   { href: '/',        label: 'Trending',    staticCount: 247 as number | null, icon: (
@@ -30,12 +32,21 @@ const TOOLS = [
 
 export default function Sidebar() {
   const path = usePathname()
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [savedCount, setSavedCount] = useState(0)
 
   useEffect(() => {
     setSavedCount(getSavedIds().length)
     return onSavedChange(() => setSavedCount(getSavedIds().length))
   }, [])
+
+  const handleSignOut = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
 
   const NAV = NAV_BASE.map(item =>
     item.href === '/saved'
@@ -124,7 +135,7 @@ export default function Sidebar() {
       </div>
 
       {/* My Niches */}
-      <div style={{ padding: '0 12px', borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+      <div style={{ padding: '0 12px', borderTop: '1px solid var(--border)', paddingTop: 16, marginBottom: 12 }}>
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 8 }}>MY NICHES</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {['Tech', 'Business', 'Lifestyle'].map(n => (
@@ -137,6 +148,64 @@ export default function Sidebar() {
             }}>{n}</span>
           ))}
         </div>
+      </div>
+
+      {/* Auth section */}
+      <div style={{ padding: '12px', borderTop: '1px solid var(--border)' }}>
+        {authLoading ? (
+          <div style={{ height: 32, background: 'var(--raised)', borderRadius: 8, opacity: 0.5 }} />
+        ) : user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+              background: 'var(--accent-bg)', border: '1px solid rgba(206,255,94,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 700, color: 'var(--accent)',
+            }}>
+              {user.email?.[0].toUpperCase()}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 11, color: 'var(--label)', overflow: 'hidden',
+                textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{user.email}</div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'var(--muted)', padding: 4, borderRadius: 6,
+                display: 'flex', alignItems: 'center',
+                transition: 'color 150ms',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--label)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--muted)')}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        ) : (
+          <Link href="/login" style={{ textDecoration: 'none' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 12px', borderRadius: 10,
+              border: '1px solid var(--border)',
+              color: 'var(--label)', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', transition: 'border-color 150ms, color 150ms',
+            }}
+            onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-hi)'; el.style.color = 'var(--ink)' }}
+            onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border)'; el.style.color = 'var(--label)' }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <path d="M10 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3M7 11l3-3-3-3M2 8h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Sign in
+            </div>
+          </Link>
+        )}
       </div>
     </aside>
   )

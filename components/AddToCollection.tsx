@@ -1,19 +1,24 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { getCollections, addVideoToCollection, onCollectionsChange, type Collection } from '@/lib/collections-store'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthProvider'
+import { createClient } from '@/lib/supabase/client'
+import { getCollectionsWithVideos, addVideoToDbCollection, seedBuiltInCollections, type DbCollection } from '@/lib/supabase/db'
 
 export default function AddToCollection({ videoId }: { videoId: string }) {
+  const { user } = useAuth()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [collections, setCollections] = useState<Collection[]>([])
+  const [collections, setCollections] = useState<DbCollection[]>([])
   const [added, setAdded] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setCollections(getCollections())
-    return onCollectionsChange(() => setCollections(getCollections()))
-  }, [])
+    if (!user || !open) return
+    const supabase = createClient()
+    getCollectionsWithVideos(supabase).then(setCollections)
+  }, [user, open])
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
@@ -23,17 +28,28 @@ export default function AddToCollection({ videoId }: { videoId: string }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
-  function handleAdd(collectionId: string, e: React.MouseEvent) {
+  const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault()
-    addVideoToCollection(collectionId, videoId)
-    setAdded(collectionId)
+    e.stopPropagation()
+    if (!user) { router.push('/login'); return }
+    setOpen(o => !o)
+  }
+
+  const handleAdd = async (col: DbCollection, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (col.videoIds.includes(videoId)) return
+    const supabase = createClient()
+    await addVideoToDbCollection(supabase, col.id, videoId)
+    setAdded(col.id)
+    setCollections(prev => prev.map(c => c.id === col.id ? { ...c, videoIds: [...c.videoIds, videoId] } : c))
     setTimeout(() => { setAdded(null); setOpen(false) }, 800)
   }
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={handleToggle}
         style={{
           padding: '8px 20px', borderRadius: 20,
           border: `1px solid ${open ? 'var(--border-hi)' : 'var(--border)'}`,
@@ -56,12 +72,13 @@ export default function AddToCollection({ videoId }: { videoId: string }) {
         <div style={{
           position: 'absolute', bottom: '110%', right: 0,
           background: 'var(--surface)', border: '1px solid var(--border-hi)',
-          borderRadius: 10, padding: '6px',
-          minWidth: 180, zIndex: 50,
-          boxShadow: 'var(--lift)',
+          borderRadius: 10, padding: '6px', minWidth: 190,
+          zIndex: 50, boxShadow: 'var(--lift)',
         }}>
           {collections.length === 0 && (
-            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--muted)' }}>No collections yet</div>
+            <div style={{ padding: '10px 12px', fontSize: 12, color: 'var(--muted)' }}>
+              No collections yet — go to Collections to create one.
+            </div>
           )}
           {collections.map(col => {
             const inCollection = col.videoIds.includes(videoId)
@@ -69,7 +86,7 @@ export default function AddToCollection({ videoId }: { videoId: string }) {
             return (
               <button
                 key={col.id}
-                onClick={e => handleAdd(col.id, e)}
+                onClick={e => handleAdd(col, e)}
                 disabled={inCollection}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
