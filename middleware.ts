@@ -1,19 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/auth/callback', '/api/', '/api/proxy/']
-
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Allow public routes through without auth check
-  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) {
-    return NextResponse.next({ request })
-  }
-
   let supabaseResponse = NextResponse.next({ request })
 
+  // Refresh the Supabase session cookie so it stays alive across page loads.
+  // We do NOT block access — pages are publicly accessible.
+  // Auth is only required for save/collection actions (handled in each component).
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,15 +24,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session and check auth
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    const loginUrl = request.nextUrl.clone()
-    loginUrl.pathname = '/login'
-    loginUrl.searchParams.set('next', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }
