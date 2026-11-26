@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { getVideoById, upsertVideos } from '@/lib/supabase/videos'
 import { VIDEOS } from '@/lib/mock-data'
@@ -43,10 +42,9 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get('id')
   if (!id) return NextResponse.json({ video: null }, { status: 400 })
 
-  // 1. Try Supabase
+  // 1. Try Supabase (service client — no cookie/session dependency)
   try {
-    const supabase = await createClient()
-    const video = await getVideoById(supabase, id)
+    const video = await getVideoById(getServiceSupabase(), id)
     if (video) return NextResponse.json({ video })
   } catch {}
 

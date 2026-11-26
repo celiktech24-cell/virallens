@@ -54,7 +54,8 @@ export function normalizeTikTokFeed(raw: any): Video[] {
 // ── Instagram ─────────────────────────────────────────────────────────────────
 export function normalizeInstagramReel(raw: any): Video | null {
   try {
-    const id = raw.pk ?? raw.id ?? raw.media_id ?? raw.shortcode
+    // Prefer shortcode (URL-safe, e.g. "DOq6eV6iIgD") over numeric pk
+    const id = raw.code ?? raw.shortcode ?? raw.pk ?? raw.id ?? raw.media_id
     if (!id) return null
 
     // caption can be a plain string (search) or {text} object (trending)
