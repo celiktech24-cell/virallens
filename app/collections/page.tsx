@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import type { Platform } from '@/lib/mock-data'
 import { VIDEOS } from '@/lib/mock-data'
 import { useAuth } from '@/components/AuthProvider'
@@ -66,28 +65,6 @@ export default function CollectionsPage() {
   const expandedVideos = expandedCollection
     ? VIDEOS.filter(v => expandedCollection.videoIds.includes(v.id) && platforms.includes(v.platform))
     : []
-
-  // Not logged in
-  if (!authLoading && !user) {
-    return (
-      <>
-        <PageHeader title="Collections" platforms={platforms} onPlatformChange={setPlatforms} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16, padding: '0 32px', textAlign: 'center' }}>
-          <svg width="40" height="40" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.25 }}>
-            <rect x="2" y="2" width="5" height="5" rx="1.5" stroke="var(--ink)" strokeWidth="1.2"/>
-            <rect x="9" y="2" width="5" height="5" rx="1.5" stroke="var(--ink)" strokeWidth="1.2"/>
-            <rect x="2" y="9" width="5" height="5" rx="1.5" stroke="var(--ink)" strokeWidth="1.2"/>
-            <rect x="9" y="9" width="5" height="5" rx="1.5" stroke="var(--ink)" strokeWidth="1.2"/>
-          </svg>
-          <div style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--label)' }}>Sign in to use Collections</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 280, lineHeight: 1.6 }}>Organize your saved videos into themed collections.</div>
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <div style={{ padding: '10px 28px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Sign in</div>
-          </Link>
-        </div>
-      </>
-    )
-  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ground)' }}>

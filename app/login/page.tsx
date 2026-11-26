@@ -1,9 +1,12 @@
 'use client'
 import { useState } from 'react'
-import Link from 'next/link'
+import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') || '/'
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -13,10 +16,11 @@ export default function LoginPage() {
     if (!email.trim()) return
     setStatus('loading')
     const supabase = createClient()
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectTo,
       },
     })
     if (error) {
@@ -131,12 +135,15 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div style={{ marginTop: 20, textAlign: 'center' }}>
-          <Link href="/" style={{ fontSize: 12, color: 'var(--muted)', textDecoration: 'none' }}>
-            ← Back to Trending
-          </Link>
-        </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

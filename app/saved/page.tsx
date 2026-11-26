@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { VIDEOS, type Platform, type Niche } from '@/lib/mock-data'
 import PageHeader from '@/components/PageHeader'
 import VideoCard from '@/components/VideoCard'
@@ -40,27 +39,6 @@ export default function SavedPage() {
 
     return () => { supabase.removeChannel(channel) }
   }, [user, authLoading])
-
-  // Not logged in
-  if (!authLoading && !user) {
-    return (
-      <>
-        <PageHeader title="Saved" platforms={platforms} onPlatformChange={setPlatforms} />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', gap: 16, padding: '0 32px', textAlign: 'center' }}>
-          <svg width="40" height="40" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.25 }}>
-            <path d="M4 2h8a1 1 0 0 1 1 1v10l-5-3-5 3V3a1 1 0 0 1 1-1Z" stroke="var(--ink)" strokeWidth="1.2" strokeLinejoin="round"/>
-          </svg>
-          <div style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: 700, fontSize: 18, color: 'var(--label)' }}>Sign in to save videos</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 280, lineHeight: 1.6 }}>Create an account to save viral videos and access them from any device.</div>
-          <Link href="/login" style={{ textDecoration: 'none' }}>
-            <div style={{ padding: '10px 28px', borderRadius: 20, background: 'var(--accent)', color: '#000', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-              Sign in
-            </div>
-          </Link>
-        </div>
-      </>
-    )
-  }
 
   const saved = VIDEOS.filter(v => savedIds.includes(v.id))
   const filtered = saved
