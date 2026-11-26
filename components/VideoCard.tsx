@@ -51,6 +51,19 @@ export default function VideoCard({ video, index = 0, showAnalysis = false }: Pr
           alignItems: 'flex-end',
           padding: 10,
         }}>
+          {video.thumbnailUrl && (
+            <img
+              src={video.thumbnailUrl}
+              alt=""
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          )}
           {/* Platform label */}
           <span style={{
             position: 'absolute', top: 10, left: 10,

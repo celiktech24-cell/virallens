@@ -110,3 +110,13 @@ export async function getVideosCount(supabase: SupabaseClient): Promise<number> 
   const { count } = await supabase.from('videos').select('id', { count: 'exact', head: true })
   return count ?? 0
 }
+
+export async function getVideosByIds(supabase: SupabaseClient, ids: string[]): Promise<Video[]> {
+  if (ids.length === 0) return []
+  const { data } = await supabase
+    .from('videos')
+    .select('id,platform,original_id,title,creator,creator_handle,views,likes,shares,comments,score,niche,hook_types,analysis_text,posted_at,fetched_at,video_url,thumbnail_url')
+    .in('id', ids)
+  if (!data) return []
+  return data.map(rowToVideo)
+}

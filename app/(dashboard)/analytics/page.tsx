@@ -1,7 +1,7 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { VIDEOS, type Platform } from '@/lib/mock-data'
+import { VIDEOS, type Platform, type Video } from '@/lib/mock-data'
 import { formatNumber } from '@/lib/utils'
 import PageHeader from '@/components/PageHeader'
 
@@ -10,8 +10,22 @@ const PLATFORM_DOT: Record<Platform, string> = { tiktok: '#69C9D0', instagram: '
 
 export default function AnalyticsPage() {
   const [platforms, setPlatforms] = useState<Platform[]>(ALL_PLATFORMS)
+  const [videos, setVideos] = useState<Video[]>(VIDEOS)
 
-  const filtered = useMemo(() => VIDEOS.filter(v => platforms.includes(v.platform)), [platforms])
+  const loadVideos = useCallback(async () => {
+    try {
+      const res = await fetch('/api/videos')
+      if (!res.ok) return
+      const data = await res.json()
+      if (Array.isArray(data) && data.length > 0) setVideos(data)
+    } catch {
+      // keep mock fallback
+    }
+  }, [])
+
+  useEffect(() => { loadVideos() }, [loadVideos])
+
+  const filtered = useMemo(() => videos.filter(v => platforms.includes(v.platform)), [videos, platforms])
 
   const stats = useMemo(() => {
     const count = filtered.length

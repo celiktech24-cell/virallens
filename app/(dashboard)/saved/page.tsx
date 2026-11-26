@@ -1,11 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { VIDEOS, type Platform, type Niche } from '@/lib/mock-data'
+import { useState, useEffect, useCallback } from 'react'
+import { VIDEOS, type Platform, type Niche, type Video } from '@/lib/mock-data'
 import PageHeader from '@/components/PageHeader'
 import VideoCard from '@/components/VideoCard'
 import { useAuth } from '@/components/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
 import { getSavedVideoIds, unsaveVideo } from '@/lib/supabase/db'
+import { getVideosByIds } from '@/lib/supabase/videos'
 
 const ALL_PLATFORMS: Platform[] = ['tiktok', 'instagram', 'youtube']
 
@@ -14,33 +15,41 @@ export default function SavedPage() {
   const [platforms, setPlatforms] = useState<Platform[]>(ALL_PLATFORMS)
   const [niche, setNiche] = useState<Niche | 'all'>('all')
   const [savedIds, setSavedIds] = useState<string[]>([])
+  const [savedVideos, setSavedVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+
+  const loadSaved = useCallback(async () => {
+    const supabase = createClient()
+    const ids = await getSavedVideoIds(supabase)
+    setSavedIds(ids)
+    const dbVideos = await getVideosByIds(supabase, ids)
+    const mockFallback = VIDEOS.filter(v => ids.includes(v.id) && !dbVideos.find(dv => dv.id === v.id))
+    setSavedVideos([...dbVideos, ...mockFallback])
+    setLoading(false)
+  }, [])
 
   useEffect(() => {
     if (authLoading) return
     if (!user) { setLoading(false); return }
 
-    const supabase = createClient()
-    getSavedVideoIds(supabase).then(ids => {
-      setSavedIds(ids)
-      setLoading(false)
-    })
+    loadSaved()
 
     // Realtime subscription for instant save/unsave feedback
+    const supabase = createClient()
     const channel = supabase
       .channel('saved_videos_changes')
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'saved_videos',
         filter: `user_id=eq.${user.id}`,
       }, () => {
-        getSavedVideoIds(supabase).then(setSavedIds)
+        loadSaved()
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user, authLoading])
+  }, [user, authLoading, loadSaved])
 
-  const saved = VIDEOS.filter(v => savedIds.includes(v.id))
+  const saved = savedVideos
   const filtered = saved
     .filter(v => platforms.includes(v.platform))
     .filter(v => niche === 'all' || v.niche === niche)

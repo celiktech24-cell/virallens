@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import type { Platform } from '@/lib/mock-data'
+import type { Platform, Video } from '@/lib/mock-data'
 import { VIDEOS } from '@/lib/mock-data'
 import { useAuth } from '@/components/AuthProvider'
 import { createClient } from '@/lib/supabase/client'
@@ -9,6 +9,7 @@ import {
   createDbCollection, deleteDbCollection,
   type DbCollection,
 } from '@/lib/supabase/db'
+import { getVideosByIds } from '@/lib/supabase/videos'
 import PageHeader from '@/components/PageHeader'
 import VideoCard from '@/components/VideoCard'
 
@@ -24,6 +25,7 @@ export default function CollectionsPage() {
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState('#69C9D0')
   const [hoveredCard, setHoveredCard] = useState<string | null>(null)
+  const [expandedVideos, setExpandedVideos] = useState<Video[]>([])
 
   const loadCollections = async () => {
     if (!user) return
@@ -62,9 +64,18 @@ export default function CollectionsPage() {
 
   const totalVideos = collections.reduce((s, c) => s + c.videoIds.length, 0)
   const expandedCollection = collections.find(c => c.id === expandedId) ?? null
-  const expandedVideos = expandedCollection
-    ? VIDEOS.filter(v => expandedCollection.videoIds.includes(v.id) && platforms.includes(v.platform))
-    : []
+
+  useEffect(() => {
+    if (!expandedCollection) { setExpandedVideos([]); return }
+    const ids = expandedCollection.videoIds
+    if (ids.length === 0) { setExpandedVideos([]); return }
+    const supabase = createClient()
+    getVideosByIds(supabase, ids).then(dbVideos => {
+      const mockFallback = VIDEOS.filter(v => ids.includes(v.id) && !dbVideos.find(dv => dv.id === v.id))
+      const all = [...dbVideos, ...mockFallback]
+      setExpandedVideos(all.filter(v => platforms.includes(v.platform)))
+    })
+  }, [expandedId, platforms, collections])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--ground)' }}>
